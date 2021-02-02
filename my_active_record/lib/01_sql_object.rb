@@ -1,5 +1,6 @@
 require_relative 'db_connection'
 require 'active_support/inflector'
+require 'byebug'
 # NB: the attr_accessor we wrote in phase 0 is NOT used in the rest
 # of this project. It was only a warm up.
 
@@ -94,7 +95,8 @@ class SQLObject
 
   def attribute_values
     self.class.columns.map { |col_name| send(col_name) }
-
+    # why does @attributes.values not work?
+    # @attributes.values
   end
 
   def insert
@@ -111,10 +113,23 @@ class SQLObject
   end
 
   def update
-    # ...
+    set_line = self.class.columns.drop(1).map{ |ele| "#{ele} = ?"}.join(",")
+    this_id = attribute_values.first
+    DBConnection.execute(<<-SQL, *attribute_values.drop(1))
+    UPDATE
+      #{self.class.table_name} 
+    SET
+      #{set_line}
+    WHERE
+      id = #{this_id}
+    SQL
   end
 
   def save
-    # ...
+    if id.nil?
+      insert
+    else
+      update
+    end
   end
 end
